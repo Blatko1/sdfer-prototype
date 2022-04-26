@@ -1,0 +1,23 @@
+[package]
+name = "sdfer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = "0.12.0"
+winit = "0.26.1"
+pollster = "0.2.5"
+bmfont_parser = "0.2.0"
+image = "0.24.1"
+nalgebra = "0.30.1"
+serde_json = "1.0.79"
+
+[dependencies.bytemuck]
+version = "1.9.1"
+features = ["derive"]
+
+[dependencies.artery-font]
+version = "1.0.1"
+features = ["png"]
