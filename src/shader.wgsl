@@ -68,8 +68,6 @@ struct UnitRange {
 var texture: texture_2d<f32>;
 [[group(0), binding(1)]]
 var tex_sampler: sampler;
-[[group(0), binding(3)]]
-var<uniform> unit_range: UnitRange;
 
 let glyph_width: f32 = 0.51;
 let smoothing: f32 = 0.02;
@@ -81,42 +79,44 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
 let bg_color: vec4<f32> = vec4<f32>(0.3, 0.2, 0.1, 0.0);
 
 fn screen_px_range(tex_coord: vec2<f32>) -> f32 {
-    let d = vec2<f32>(textureDimensions(texture));
-    let range = vec2<f32>(19.0/d.x, 19.0/d.y);
+    let range = vec2<f32>(3.0, 3.0) / vec2<f32>(textureDimensions(texture));
     let screen_tex_size: vec2<f32> = vec2<f32>(1.0, 1.0)/fwidth(tex_coord);
     return max(0.5 * dot(range, screen_tex_size), 1.0);
 }
 
-[[stage(fragment)]]
-fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    let s = textureSample(texture, tex_sampler, in.tex_pos).rgb;
-    // Acquire the signed distance
-    let d = median(s.r, s.g, s.b) - 0.5;
-    // Convert the distance to screen pixels
-    let screen_pixels = screen_px_range(in.tex_pos) * d;
-    // Opacity
-    let w = clamp(screen_pixels + 0.9, 0.0, 1.0);
-
-    let fg_color: vec4<f32> = vec4<f32>(0.6, 0.5, 0.4, 1.0);
-
-    return mix(bg_color, fg_color, w);
+fn safeNormalize( v: vec2<f32> ) -> vec2<f32>
+{
+   var len = length( v );
+   if(len > 0.0){
+        len = 1.0 / len;
+    } else {
+        len = 0.0;
+    };
+   return v * len;
 }
 
-// fn screen_px_range(tex_coord: vec2<f32>) -> f32 {
-//     let screen_tex_size: vec2<f32> = vec2<f32>(1.0, 1.0)/fwidth(tex_coord);
-//     return max(0.5 * dot(vec2<f32>(unit_range.px, unit_range.px), screen_tex_size), 1.0);
-// }
-// 
-// [[stage(fragment)]]
-// fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-//     let s = textureSample(texture, tex_sampler, in.tex_pos).rgba;
-//     let alpha = s.a;
-//     let sd = median(s.r, s.g, s.b) - 0.5;
-//     let screen_px_distance = screen_px_range(in.tex_pos) * sd;
-//     let opacity = clamp(screen_px_distance + 0.5, 0.0, 1.0);
-//     let w = clamp(sd/fwidth(sd) + 0.5, 0.0, 1.0);
-//     
-//     let fg_color: vec4<f32> = vec4<f32>(0.6, 0.5, 0.4, 1.0);
-// 
-//     return mix(bg_color, fg_color, w);
-// }
+[[stage(fragment)]]
+fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    let sample = textureSample(texture, tex_sampler, in.tex_pos).rgba;
+    let alpha = sample.a;
+    let dist = median(sample.r, sample.g, sample.b) - 0.5;
+    let grad_dist = normalize(vec2<f32>(dpdx(dist), dpdy(dist)));
+
+    let uv = in.tex_pos * vec2<f32>(textureDimensions(texture));
+    let jdx = dpdx(uv);
+    let jdy = dpdy(uv);
+
+    let grad = vec2<f32>(grad_dist.x * jdx.x + grad_dist.y * jdy.x, grad_dist.x * jdx.y + grad_dist.y * jdy.y);
+    // Convert the distance to screen pixels
+    //let screen_pixels = screen_px_range(in.tex_pos) * d;
+    // Opacity
+    //let w = clamp(screen_pixels + 0.5, 0.0, 1.0);
+
+    //let fg_color: vec4<f32> = vec4<f32>(0.6, 0.5, 0.4, 1.0);
+    //return mix(bg_color, fg_color, w);
+    let afwidth = sqrt(2.0) * 0.5 * length(grad);
+
+    let coverage = smoothStep(0.0 - afwidth, 0.0 + afwidth, dist);         //min(normalize * length(grad), 0.5);
+    //let o = 1.0 - smoothStep(0.0 - l, 0.0 + l, d);
+    return vec4<f32>(1.0, 1.0, 1.0, coverage);
+}

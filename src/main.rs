@@ -96,20 +96,12 @@ struct Glyph {
 }
 
 fn main() {
-    let font_atlas = include_str!("../fonts/gigi.fnt");
-    let fnt_data = bmfont_parser::BMFont::from_loaded(
-        &bmfont_parser::Format::BMFont,
-        font_atlas,
-        &["../fonts/gigi.png"],
-    )
-    .unwrap();
-
-    let data = artery_font::ArteryFont::read(&include_bytes!("../fonts/arial_data.arfont")[..]).unwrap();
+    let data = artery_font::ArteryFont::read(&include_bytes!("../fonts/arial.arfont")[..]).unwrap();
     let image = data.images.first().unwrap();
     let image_data = &image.data;
     let variants = data.variants.first().unwrap();
     println!("flags: {}, w: {}, h: {}, ch: {}, pixel: {:?}, type: {:?}, child: {}, tex_flags: {}, meta: {}", image.flags, image.width, image.height, image.channels, image.pixel_format, image.image_type, image.child_images, image.texture_flags, image.metadata);
-
+    println!("Distance range: {}", variants.metrics.distance_range);
     let mut glyphs: HashMap<u32, Glyph> = HashMap::new();
     for g in &variants.glyphs {
         let glyph = Glyph {
@@ -307,16 +299,6 @@ fn main() {
                         },
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
                 ],
                 label: Some("texture_bind_group_layout"),
             });
@@ -328,14 +310,6 @@ fn main() {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
     let px_range = variants.metrics.distance_range / variants.metrics.font_size;
-    println!("px_range: {}", px_range);
-    let px_buffer = g
-        .device
-        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Matrix Buffer"),
-            contents: bytemuck::cast_slice(&[px_range]),
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
     let texture_bind_group = g.device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &texture_bind_group_layout,
         entries: &[
@@ -350,10 +324,6 @@ fn main() {
             wgpu::BindGroupEntry {
                 binding: 2,
                 resource: matrix_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: px_buffer.as_entire_binding(),
             },
         ],
         label: Some("diffuse_bind_group"),
