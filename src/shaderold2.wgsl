@@ -76,52 +76,18 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
     return max(min(r, g), min(max(r, g), b));
 }
 
-fn screen_px_range(tex_coord: vec2<f32>) -> f32 {
-    let range = vec2<f32>(3.0, 3.0) / vec2<f32>(textureDimensions(texture));
-    let screen_tex_size: vec2<f32> = vec2<f32>(1.0, 1.0)/fwidth(tex_coord);
-    return max(0.5 * dot(range, screen_tex_size), 1.0);
-}
-
-fn normalize_safe(v: vec2<f32>) -> vec2<f32>
-{
-   var len = length( v );
-   if(len > 0.0){
-        len = 1.0 / len;
-    } else {
-        len = 0.0;
-    };
-   return v * len;
-}
-
 [[stage(fragment)]]
 fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let sample = textureSample(texture, tex_sampler, in.tex_pos).rgba;
+    let alpha = sample.a;
     let dist = median(sample.r, sample.g, sample.b) - 0.5;
-    let grad_dist = normalize_safe(vec2<f32>(dpdx(dist), dpdy(dist)));
-
-    let uv = in.tex_pos * vec2<f32>(textureDimensions(texture));
-    let jdx = dpdx(uv);
-    let jdy = dpdy(uv);
-
-    let grad = vec2<f32>(grad_dist.x * jdx.x + grad_dist.y * jdy.x, grad_dist.x * jdx.y + grad_dist.y * jdy.y);
     // Convert the distance to screen pixels
-    //let screen_pixels = screen_px_range(in.tex_pos) * d;
-    // Opacity
-    //let w = clamp(screen_pixels + 0.5, 0.0, 1.0);
+    let afwidth = dist/fwidth(dist);
 
     let fg_color: vec4<f32> = vec4<f32>(0.9, 0.5, 0.4, 1.0);
     let bg_color: vec4<f32> = vec4<f32>(0.3, 0.2, 0.1, 0.0);
 
-    let distance_range = 20.0;
-    let adjustment = 1.0 / distance_range;
-    let afwidth = sqrt(2.0) * 0.5 * length(grad) * adjustment;
-    let norm = min(afwidth, 0.5);
-    let opacity = smoothStep(0.0 - afwidth, 0.0 + afwidth, dist);
+    let coverage = clamp(afwidth + 0.5, 0.0, 1.0);
 
-    let gamma = 2.2;
-    let premultiply = 0.0;
-    let alpha = pow(fg_color.a * opacity, 1.0 / gamma);
-    //return mix(bg_color, fg_color, opacity);
-    //result.rgb = mix(fg_color.rgb, fg_color.rgb * alpha, premultiply);
-    return vec4<f32>(mix(fg_color.rgb, fg_color.rgb * alpha, premultiply), alpha);
+    return mix(bg_color, fg_color, coverage);
 }

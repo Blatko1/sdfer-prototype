@@ -41,7 +41,7 @@ impl Text {
         }
     }
 
-    pub fn to_vertices(&self, glyphs: HashMap<u32, Glyph>) -> Vec<Vertex> {
+    pub fn to_vertices(&self, glyphs: &HashMap<u32, Glyph>) -> Vec<Vertex> {
         let mut result = Vec::new();
         let mut chars = self.text.chars();
 
@@ -123,7 +123,13 @@ fn main() {
     // }
 
     let text = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, 0.0, -10.0));
-    let vertices = text.to_vertices(glyphs);
+    let text2 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -1.7, -10.0));
+    let text3 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -3.4, -10.0));
+    let text4 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -5.1, -10.0));
+    let vertices = text.to_vertices(&glyphs);
+    let vertices2 = text2.to_vertices(&glyphs);
+    let vertices3 = text3.to_vertices(&glyphs);
+    let vertices4 = text4.to_vertices(&glyphs);
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -329,11 +335,35 @@ fn main() {
         label: Some("diffuse_bind_group"),
     });
     let pipeline = pipeline(&g, &texture_bind_group_layout);
+    let pipeline_old = pipeline_old(&g, &texture_bind_group_layout);
+    let pipeline_old2 = pipeline_old2(&g, &texture_bind_group_layout);
+    let pipeline_test = pipeline_test(&g, &texture_bind_group_layout);
     let buffer = g
         .device
         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Buffer"),
             contents: bytemuck::cast_slice(&vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+    let buffer2 = g
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Buffer2"),
+            contents: bytemuck::cast_slice(&vertices2),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+    let buffer3 = g
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Buffer3"),
+            contents: bytemuck::cast_slice(&vertices3),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+    let buffer4 = g
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Buffer3"),
+            contents: bytemuck::cast_slice(&vertices4),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
@@ -418,6 +448,21 @@ fn main() {
                     rpass.set_vertex_buffer(0, buffer.slice(..));
                     rpass.set_bind_group(0, &texture_bind_group, &[]);
                     rpass.draw(0..4, 0..vertices.len() as u32);
+
+                    rpass.set_pipeline(&pipeline_test);
+                    rpass.set_vertex_buffer(0, buffer4.slice(..));
+                    rpass.set_bind_group(0, &texture_bind_group, &[]);
+                    rpass.draw(0..4, 0..vertices.len() as u32);
+
+                    rpass.set_pipeline(&pipeline_old);
+                    rpass.set_vertex_buffer(0, buffer2.slice(..));
+                    rpass.set_bind_group(0, &texture_bind_group, &[]);
+                    rpass.draw(0..4, 0..vertices.len() as u32);
+
+                    rpass.set_pipeline(&pipeline_old2);
+                    rpass.set_vertex_buffer(0, buffer3.slice(..));
+                    rpass.set_bind_group(0, &texture_bind_group, &[]);
+                    rpass.draw(0..4, 0..vertices.len() as u32);
                 }
 
                 g.queue.submit(Some(encoder.finish()));
@@ -484,7 +529,158 @@ fn pipeline(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipelin
                 entry_point: "main_fs",
                 targets: &[wgpu::ColorTargetState {
                     format: g.config.format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                }],
+            }),
+            multiview: None,
+        })
+}
+
+fn pipeline_old(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
+    let shader = g
+        .device
+        .create_shader_module(&wgpu::include_wgsl!("shaderold.wgsl"));
+    let default_layout = g
+        .device
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Default Render Pipeline Layout"),
+            bind_group_layouts: &[layout],
+            push_constant_ranges: &[],
+        });
+    g.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Default Render Pipeline"),
+            layout: Some(&default_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "main_vs",
+                buffers: &[Vertex::buffer_layout()],
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: Some(wgpu::IndexFormat::Uint16),
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "main_fs",
+                targets: &[wgpu::ColorTargetState {
+                    format: g.config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                }],
+            }),
+            multiview: None,
+        })
+}
+
+fn pipeline_old2(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
+    let shader = g
+        .device
+        .create_shader_module(&wgpu::include_wgsl!("shaderold2.wgsl"));
+    let default_layout = g
+        .device
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Default Render Pipeline Layout"),
+            bind_group_layouts: &[layout],
+            push_constant_ranges: &[],
+        });
+    g.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Default Render Pipeline"),
+            layout: Some(&default_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "main_vs",
+                buffers: &[Vertex::buffer_layout()],
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: Some(wgpu::IndexFormat::Uint16),
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "main_fs",
+                targets: &[wgpu::ColorTargetState {
+                    format: g.config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                }],
+            }),
+            multiview: None,
+        })
+}
+
+fn pipeline_test(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
+    let shader = g
+        .device
+        .create_shader_module(&wgpu::include_wgsl!("shadertest.wgsl"));
+    let default_layout = g
+        .device
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Default Render Pipeline Layout"),
+            bind_group_layouts: &[layout],
+            push_constant_ranges: &[],
+        });
+    g.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Default Render Pipeline"),
+            layout: Some(&default_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "main_vs",
+                buffers: &[Vertex::buffer_layout()],
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: Some(wgpu::IndexFormat::Uint16),
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "main_fs",
+                targets: &[wgpu::ColorTargetState {
+                    format: g.config.format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
