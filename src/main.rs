@@ -122,10 +122,10 @@ fn main() {
     //     rgba.push(b);
     // }
 
-    let text = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, 0.0, -10.0));
-    let text2 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -1.7, -10.0));
-    let text3 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -3.4, -10.0));
-    let text4 = Text::new("IHNMLKTVXXESO!\"#$%&/(", (-5.0, -5.1, -10.0));
+    let text = Text::new("IHNMLKTVXXESO!\"#$%&/(aaeaqwdfghnmll", (-5.0, 0.0, -10.0));
+    let text2 = Text::new("IHNMLKTVXXESO!\"#$%&/(aaeaqwdfghnmll", (-5.0, -1.7, -10.0));
+    let text3 = Text::new("IHNMLKTVXXESO!\"#$%&/(aaeaqwdfghnmll", (-5.0, -3.4, -10.0));
+    let text4 = Text::new("IHNMLKTVXXESO!\"#$%&/(aaeaqwdfghnmll", (-5.0, -5.1, -10.0));
     let vertices = text.to_vertices(&glyphs);
     let vertices2 = text2.to_vertices(&glyphs);
     let vertices3 = text3.to_vertices(&glyphs);
@@ -497,7 +497,7 @@ fn main() {
 fn pipeline(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
     let shader = g
         .device
-        .create_shader_module(&wgpu::include_wgsl!("shader.wgsl"));
+        .create_shader_module(&wgpu::include_wgsl!("expensive_premultiplied.wgsl"));
     let default_layout = g
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -529,18 +529,7 @@ fn pipeline(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipelin
                 entry_point: "main_fs",
                 targets: &[wgpu::ColorTargetState {
                     format: g.config.format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                    }),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
@@ -551,7 +540,7 @@ fn pipeline(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipelin
 fn pipeline_old(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
     let shader = g
         .device
-        .create_shader_module(&wgpu::include_wgsl!("shaderold.wgsl"));
+        .create_shader_module(&wgpu::include_wgsl!("less_expensive.wgsl"));
     let default_layout = g
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -594,7 +583,7 @@ fn pipeline_old(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPip
 fn pipeline_old2(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
     let shader = g
         .device
-        .create_shader_module(&wgpu::include_wgsl!("shaderold2.wgsl"));
+        .create_shader_module(&wgpu::include_wgsl!("cheap.wgsl"));
     let default_layout = g
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -637,7 +626,7 @@ fn pipeline_old2(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPi
 fn pipeline_test(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPipeline {
     let shader = g
         .device
-        .create_shader_module(&wgpu::include_wgsl!("shadertest.wgsl"));
+        .create_shader_module(&wgpu::include_wgsl!("less_expensive_premultiplied.wgsl"));
     let default_layout = g
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -669,18 +658,7 @@ fn pipeline_test(g: &Graphics, layout: &wgpu::BindGroupLayout) -> wgpu::RenderPi
                 entry_point: "main_fs",
                 targets: &[wgpu::ColorTargetState {
                     format: g.config.format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                    }),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),

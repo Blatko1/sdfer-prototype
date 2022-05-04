@@ -93,7 +93,7 @@ fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let fg_color: vec4<f32> = vec4<f32>(0.9, 0.5, 0.4, 1.0);
     let bg_color: vec4<f32> = vec4<f32>(0.3, 0.2, 0.1, 0.0);
 
-    let coverage = clamp(screen_pixels + 0.5, 0.0, 1.0);
+    let coverage = clamp(screen_pixels + 0.6, 0.0, 1.0);
 
     return mix(bg_color, fg_color, coverage);
 }

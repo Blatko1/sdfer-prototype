@@ -77,7 +77,7 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
 }
 
 fn screen_px_range(tex_coord: vec2<f32>) -> f32 {
-    let range = vec2<f32>(20.0, 20.0) / vec2<f32>(textureDimensions(texture));
+    let range = vec2<f32>(8.0, 8.0) / vec2<f32>(textureDimensions(texture));
     let screen_tex_size: vec2<f32> = vec2<f32>(1.0, 1.0)/fwidth(tex_coord);
     return max(0.5 * dot(range, screen_tex_size), 1.0);
 }
@@ -97,9 +97,8 @@ fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     //return mix(bg_color, fg_color, coverage);
 
     let gamma = 2.2;
-    let premultiply = 0.0;
+    let premultiply = 1.0;
     let alpha = pow(fg_color.a * opacity, 1.0 / gamma);
     //return mix(bg_color, fg_color, opacity);
-    //result.rgb = mix(fg_color.rgb, fg_color.rgb * alpha, premultiply);
     return vec4<f32>(mix(fg_color.rgb, fg_color.rgb * alpha, premultiply), alpha);
 }

@@ -112,16 +112,17 @@ fn main_fs(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let fg_color: vec4<f32> = vec4<f32>(0.9, 0.5, 0.4, 1.0);
     let bg_color: vec4<f32> = vec4<f32>(0.3, 0.2, 0.1, 0.0);
 
-    let distance_range = 20.0;
+    let distance_range = 8.0;
     let adjustment = 1.0 / distance_range;
     let afwidth = sqrt(2.0) * 0.5 * length(grad) * adjustment;
     let norm = min(afwidth, 0.5);
     let opacity = smoothStep(0.0 - afwidth, 0.0 + afwidth, dist);
 
     let gamma = 2.2;
-    let premultiply = 0.0;
-    let alpha = pow(fg_color.a * opacity, 1.0 / gamma);
+    let premultiply = 1.0;
+    let fg_alpha = pow(fg_color.a * opacity, 1.0 / gamma);
+    let bg_alpha = pow(bg_color.a * opacity, 1.0 / gamma);
     //return mix(bg_color, fg_color, opacity);
     //result.rgb = mix(fg_color.rgb, fg_color.rgb * alpha, premultiply);
-    return vec4<f32>(mix(fg_color.rgb, fg_color.rgb * alpha, premultiply), alpha);
+    return vec4<f32>(mix(fg_color.rgb, fg_color.rgb * fg_alpha, premultiply), alpha);
 }
