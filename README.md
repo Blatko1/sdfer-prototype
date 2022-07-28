@@ -1,6 +1,6 @@
 # Prototype sdfer-rs
 
-**Transfered to [sdfer-proto](https://github.com/Blatko1/sdfer-proto)**
+**Transfered to *[sdfer-proto](https://github.com/Blatko1/sdfer-proto)*!**
 
 Just a prototype of some future repo (lib) for 3D MSDF text rendering.
 
